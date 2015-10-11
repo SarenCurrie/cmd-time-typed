@@ -1,20 +1,20 @@
 #include <pebble.h>
 
 #define TYPE_DELTA 200
-#define PROMPT_DELTA 1000
+#define PROMPT_DELTA 1000	
+#define KEY_TEMPERATURE 0
+#define KEY_CONDITIONS 1
 
 //Layers
 static Window *window;
-static TextLayer *time_label, *time_layer, *date_label, *date_layer, *prompt_label;
-static InverterLayer *prompt_layer;
+static TextLayer *time_label, *time_layer, *date_label, *date_layer, *weather_label, *weather_layer;
 static AppTimer *timer;
 
 //Buffers
-static char time_buffer[] = "XX:XX", date_buffer[] = "XX/XX/XXXX";
+static char time_buffer[] = "XX:XX", date_buffer[] = "XX/XX/XX", weather_buffer[] = "xxxxxxxx, x°C";
 
 //State
 static int state = 0;
-static bool prompt_visible = false;
 
 //Prototypes
 static TextLayer* cl_init_text_layer(GRect location, GColor colour, GColor background, ResHandle handle, GTextAlignment alignment);
@@ -35,7 +35,7 @@ static void set_time(struct tm *t)
   text_layer_set_text(time_layer, time_buffer);
 
   //Set date
-  strftime(date_buffer, sizeof("XX/XX/XXXX"), "%d/%m/%Y", t);
+  strftime(date_buffer, sizeof("XX/XX/XXXX"), "%m/%d/%y", t);
   text_layer_set_text(date_layer, date_buffer);
 }
 
@@ -45,139 +45,33 @@ static void set_time_anim()
   time_t temp;
   struct tm *t;
 
-  //Do frame animation
-  switch(state)
-  {
-    case 0:
-      //Set time
-      temp = time(NULL);    
-      t = localtime(&temp);
-      set_time(t);
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 1:
-      text_layer_set_text(time_label, "C:\\>t");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 2:
-      text_layer_set_text(time_label, "C:\\>ti");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 3:
-      text_layer_set_text(time_label, "C:\\>tim");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 4:
-      text_layer_set_text(time_label, "C:\\>time");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 5:
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 6:
-      text_layer_set_text(time_label, "C:\\>time /");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 7:
-      text_layer_set_text(time_label, "C:\\>time /t");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 8:
-      text_layer_set_text(time_label, "C:\\>time /t");
-      layer_add_child(window_get_root_layer(window), text_layer_get_layer(time_layer));
-      text_layer_set_text(date_label, "C:\\>");
-
-      timer = app_timer_register(10 * TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 9:
-      text_layer_set_text(date_label, "C:\\>d");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 10:
-      text_layer_set_text(date_label, "C:\\>da");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 11:
-      text_layer_set_text(date_label, "C:\\>dat");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 12:
-      text_layer_set_text(date_label, "C:\\>date");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 13:
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 14:
-      text_layer_set_text(date_label, "C:\\>date /");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 15:
-      text_layer_set_text(date_label, "C:\\>date /t");
-
-      timer = app_timer_register(TYPE_DELTA, set_time_anim, 0);
-      break;
-    case 16:
-      text_layer_set_text(date_label, "C:\\>date /t");
-      layer_add_child(window_get_root_layer(window), text_layer_get_layer(date_layer));
-      text_layer_set_text(prompt_label, "C:\\>");
-
-      prompt_visible = true;
-      timer = app_timer_register(PROMPT_DELTA, set_time_anim, 0);
-      break;
-    default:  //Rest of the minute
-      //Do prompt flash
-      if(prompt_visible)
-      {
-        prompt_visible = false;
-        layer_remove_from_parent(inverter_layer_get_layer(prompt_layer));
-      }
-      else
-      {
-        prompt_visible = true;
-        layer_add_child(window_get_root_layer(window), inverter_layer_get_layer(prompt_layer));
-      }
-      timer = app_timer_register(PROMPT_DELTA, set_time_anim, 0);
-      break;
-  }
-
-  //Finallly
+  //Finally
   state++;
 }
 
 static void tick_handler(struct tm *t, TimeUnits units_changed)
 {
-  app_timer_cancel(timer);  
+  app_timer_cancel(timer); 
+	
+  time_t temp;
 
   //Start anim cycle
-  state = 0;
-  timer = app_timer_register(PROMPT_DELTA, set_time_anim, 0);
+  temp = time(NULL);    
+  t = localtime(&temp);
+  set_time(t);
+  //timer = app_timer_register(PROMPT_DELTA, set_time_anim, 0);
 
   //Blank before time change
-  text_layer_set_text(time_label, "C:\\>");
-  layer_remove_from_parent(text_layer_get_layer(time_layer));
-  text_layer_set_text(date_label, "");
-  layer_remove_from_parent(text_layer_get_layer(date_layer));
-  text_layer_set_text(prompt_label, "");
-
-  //Flash
-  layer_remove_from_parent(inverter_layer_get_layer(prompt_layer));  
-  prompt_visible = false;
+  text_layer_set_text(time_label, "p:~$ time");
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(time_layer));
+  text_layer_set_text(date_label, "p:~$ date");
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(date_layer));
+  text_layer_set_text(weather_label, "p:~$ weather");
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(weather_layer));
+      
 
   //Change time display
-  set_time(t);
+  //set_time(t);
 }
 
 /***************************** Window Lifecycle *********************************/
@@ -206,11 +100,13 @@ static void window_load(Window *window)
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(date_layer));
 
   //Prompt
-  prompt_label = cl_init_text_layer(GRect(5, 99, 144, 30), GColorWhite, GColorClear, font_handle, GTextAlignmentLeft);
-  text_layer_set_text(prompt_label, "");
-  layer_add_child(window_get_root_layer(window), text_layer_get_layer(prompt_label));
+  weather_label = cl_init_text_layer(GRect(5, 99, 144, 30), GColorWhite, GColorClear, font_handle, GTextAlignmentLeft);
+  text_layer_set_text(weather_label, "");
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(weather_label));
 
-  prompt_layer = inverter_layer_create(GRect(45, 115, 12, 2));
+  weather_layer = cl_init_text_layer(GRect(5, 116, 144, 30), GColorWhite, GColorClear, font_handle, GTextAlignmentLeft);
+  text_layer_set_text(weather_layer, "");
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(weather_layer));
 }
 
 static void window_unload(Window *window) 
@@ -224,11 +120,56 @@ static void window_unload(Window *window)
   text_layer_destroy(date_layer);
 
   //Prompt
-  text_layer_destroy(prompt_label);
-  inverter_layer_destroy(prompt_layer);
+  text_layer_destroy(weather_label);
+  text_layer_destroy(weather_layer);
 }
 
 /******************************** App Lifecycle *********************************/
+static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+  // Store incoming information
+  static char temperature_buffer[8];
+  static char conditions_buffer[32];
+  static char weather_layer_buffer[32];
+  
+  // Read first item
+  Tuple *t = dict_read_first(iterator);
+
+  // For all items
+  while(t != NULL) {
+    // Which key was received?
+    switch(t->key) {
+    case KEY_TEMPERATURE:
+      snprintf(temperature_buffer, sizeof(temperature_buffer), "%d °C", (int)t->value->int32);
+      break;
+    case KEY_CONDITIONS:
+      snprintf(conditions_buffer, sizeof(conditions_buffer), "%s", t->value->cstring);
+      break;
+    default:
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized!", (int)t->key);
+      break;
+    }
+
+    // Look for next item
+    t = dict_read_next(iterator);
+  }
+  
+  // Assemble full string and display
+  snprintf(weather_buffer, sizeof(weather_layer_buffer), "%s, %s", conditions_buffer, temperature_buffer);
+  text_layer_set_text(weather_layer, weather_buffer);
+}
+
+static void inbox_dropped_callback(AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
+}
+
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
+}
+
 
 static void init(void) 
 {
@@ -245,6 +186,15 @@ static void init(void)
 
   //Finally
   window_stack_push(window, true);
+	// Register callbacks
+  app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
+  
+  // Open AppMessage
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+	
 }
 
 static void deinit(void) 

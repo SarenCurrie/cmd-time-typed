@@ -1,23 +1,29 @@
 {
-  "uuid": "d51a97f0-c6a5-4f83-8777-daa32a17c583",
-  "shortName": "CMD TimTyp",
-  "longName": "CMD Time Typed",
-  "companyName": "Chris Lewis",
-  "versionCode": 1,
-  "versionLabel": "1.0.0",
-  "watchapp": {
-    "watchface": true
-  },
-  "appKeys": {
-    "dummy": 0
-  },
-  "resources": {
-    "media": [
-      {
-        "type": "font",
-        "name": "FONT_LUCIDA_16",
-        "file": "fonts/lucida.ttf"
-      }
-    ]
-  }
+    "appKeys": {
+        "KEY_CONDITIONS": 1,
+        "KEY_TEMPERATURE": 0
+    },
+    "capabilities": [
+        "location"
+    ],
+    "companyName": "3x14159265",
+    "longName": "Console Time",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "fonts/lucida.ttf",
+                "name": "FONT_LUCIDA_16",
+                "type": "font"
+            }
+        ]
+    },
+    "sdkVersion": "2",
+    "shortName": "Console Time",
+    "uuid": "d51a97f0-c6a5-4f83-8777-daa32a17c583",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
 }
